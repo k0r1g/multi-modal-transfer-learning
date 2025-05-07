@@ -36,18 +36,45 @@ class CLIPBackbone(nn.Module):
         return out
 
 
-"""
-Currently using nn.MultiheadAttention for self-attention. 
 
-Will implement in full later in the day. 
-
-"""
+# # Old version that used nn.MultiheadAttention
+# class CausalSelfAttnBlock(nn.Module): 
+#     """A single transformer block with no cross attention"""
+#     def __init__(self, d_model: int, n_heads: int, dropout: float): 
+#         super().__init__()
+#         self.self_attn = nn.MultiheadAttention(d_model, n_heads, dropout=dropout, batch_first=True)
+#         self.ln1 = nn.LayerNorm(d_model)
+#         self.mlp = nn.Sequential(
+#             nn.Linear(d_model, d_model * 4),
+#             nn.GELU(),
+#             nn.Linear(d_model * 4, d_model),
+#             nn.Dropout(dropout),
+#         )
+#         self.ln2 = nn.LayerNorm(d_model)
+    
+#     def forward(self, x: torch.Tensor, attn_mask: torch.Tensor):
+#         x = x + self.self_attn(self.ln1(x), self.ln1(x), self.ln1(x), attn_mask=attn_mask)[0]
+#         x = x + self.mlp(self.ln2(x))
+#         return x 
 
 class CausalSelfAttnBlock(nn.Module): 
     """A single transformer block with no cross attention"""
-    def __init__(self, d_model: int, n_heads: int, dropout: float): 
+    def __init__(self, d_model: int, n_heads: int, dropout: float)
         super().__init__()
-        self.self_attn = nn.MultiheadAttention(d_model, n_heads, dropout=dropout, batch_first=True)
+        assert d_model % n_heads == 0, 
+        self.d_model = d_model 
+        self.n_heads = n_heads 
+        self.head_dim = d_model // n_heads 
+        
+        # projection matrices 
+        self.q_proj = nn.Linear(d_model, d_model, bias=False)
+        self.k_proj = nn.Linear(d_model, d_model, bias=False)
+        self.v_proj = nn.Linear(d_model, d_model, bias=False)
+        self.out_proj = nn.Linear(d_model, d_model, bias=False)
+        
+        # other layers 
+        self.attn_drop = nn.Dropout(dropout)
+        self.resid_drop = nn.Dropout(dropout)
         self.ln1 = nn.LayerNorm(d_model)
         self.mlp = nn.Sequential(
             nn.Linear(d_model, d_model * 4),
@@ -57,10 +84,54 @@ class CausalSelfAttnBlock(nn.Module):
         )
         self.ln2 = nn.LayerNorm(d_model)
     
-    def forward(self, x: torch.Tensor, attn_mask: torch.Tensor):
-        x = x + self.self_attn(self.ln1(x), self.ln1(x), self.ln1(x), attn_mask=attn_mask)[0]
+    #helper functions 
+    def _split_heads(self, x: torch.Tensor) -> torch.Tensor: 
+        """(B,L,D) -> (B,n_heads,L,head_dim)"""
+        B, L, _ = x.size()
+        x = x.view(B, L, self.n_heads, self.head_dim)
+        return x.permute(0,2,1,3)
+    
+    def _merge_heads(self, x: torch.Tensor) -> torch.Tensor: 
+        """(B,n_heads,L,head_dim) -> (B,L,D)"""
+        B, h, L, d_h = x.size()
+        return x.permute(0,2,1,3).contiguous().view(B, L, h*d_h)
+        
+    def forward(self, x: torch.Tensor, attn_mask: torch.Tensor): 
+        """
+        x: (B,L,D)
+        attn_mask: (B,L,L) -> additive, 0 for allowed, -inf for blocked 
+        """
+        B, L, _ = x.size()
+        x_ln = self.ln1(x)
+        
+        # project and split heads 
+        Q = self._split_heads(self.q_proj(x_ln)) # (B,n_heads,L,head_dim)
+        K = self._split_heads(self.k_proj(x_ln)) # (B,n_heads,L,head_dim)
+        V = self._split_heads(self.v_proj(x_ln)) # (B,n_heads,L,head_dim)
+        
+        # compute attention score
+        scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.head_dim) #(B, n_heads, L, L)
+        
+        if attn_mask is not None: 
+            scores = scores + attn_mask.unsqueeze(0).unsqueeze(0)
+        
+        attn = torch.softmax(scores, dim=-1) #softmax over last dimension so that we apply softmax over the keys 
+        attn = self.attn_drop(attn)
+        
+        context = torch.matmul(attn, V) #(B, n_heads, L, head_dim)
+        context = self._merge_heads(context) #(B, L, D)
+        attn_out = self.out_proj(context) #(B, L, D)
+        attn_out = self.resid_drop(attn_out)
+        
+        # residual + MLP 
+        x = x + attn_out 
         x = x + self.mlp(self.ln2(x))
         return x 
+
+
+
+
+
 
 class MMDecoder(nn.Module):
     """Stack of causal self-attention blocks""" 
