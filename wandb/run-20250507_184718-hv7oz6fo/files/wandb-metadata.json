@@ -1,0 +1,44 @@
+{
+  "os": "macOS-14.2.1-arm64-arm-64bit-Mach-O",
+  "python": "CPython 3.13.3",
+  "startedAt": "2025-05-07T17:47:18.096828Z",
+  "program": "/Users/korirogers/multi-modal-transfer-learning/train_decoder.py",
+  "codePath": "train_decoder.py",
+  "git": {
+    "remote": "https://github.com/k0r1g/multi-modal-transfer-learning",
+    "commit": "341802dff04d5140c966cdb6220d127ef5c0b4b5"
+  },
+  "email": "kori@rogers.live",
+  "root": "/Users/korirogers/multi-modal-transfer-learning",
+  "host": "MacBook-Air-9.local",
+  "executable": "/Users/korirogers/miniconda3/envs/mlx-week4/bin/python",
+  "codePathLocal": "train_decoder.py",
+  "cpu_count": 8,
+  "cpu_count_logical": 8,
+  "disk": {
+    "/": {
+      "total": "494384795648",
+      "used": "412204417024"
+    },
+    "/System/Volumes/Data": {
+      "total": "494384795648",
+      "used": "412204417024"
+    }
+  },
+  "memory": {
+    "total": "8589934592"
+  },
+  "cpu": {
+    "count": 8,
+    "countLogical": 8
+  },
+  "apple": {
+    "name": "Apple M2",
+    "ecpuCores": 4,
+    "pcpuCores": 4,
+    "gpuCores": 10,
+    "memoryGb": 8,
+    "swapTotalBytes": "17179869184",
+    "ramTotalBytes": "8589934592"
+  }
+}

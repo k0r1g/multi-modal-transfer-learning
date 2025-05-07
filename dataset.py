@@ -30,11 +30,11 @@ class Flickr30kDataset(torch.utils.data.Dataset):
         self.index: List[Tuple[int, int]] = [
             (row_id, cap_id)
             for row_id , n_caps in enumerate(self.data["caption"])
-            for cap_id in range(n_caps) #n_caps is always 5
+            for cap_id in range(len(n_caps)) #n_caps is always 5
         ]
 
         
-        self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+        self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32", use_fast=True)
         self.tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
         self.max_length = max_caption_length
         
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     dset = Flickr30kDataset.__new__(Flickr30kDataset)  # bypass __init__
     dset.data = [{"image": dummy_image, "caption": dummy_caption}]
     dset.index = [(0, 0)]
-    dset.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    dset.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32", use_fast=True)
     dset.tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
     dset.max_length = 10
     

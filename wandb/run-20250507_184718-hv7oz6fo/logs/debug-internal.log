@@ -1,0 +1,15 @@
+{"time":"2025-05-07T18:47:18.097663+01:00","level":"INFO","msg":"stream: starting","core version":"0.19.10","symlink path":"/Users/korirogers/multi-modal-transfer-learning/wandb/run-20250507_184718-hv7oz6fo/logs/debug-core.log"}
+{"time":"2025-05-07T18:47:18.561987+01:00","level":"INFO","msg":"created new stream","id":"hv7oz6fo"}
+{"time":"2025-05-07T18:47:18.562028+01:00","level":"INFO","msg":"stream: started","id":"hv7oz6fo"}
+{"time":"2025-05-07T18:47:18.562053+01:00","level":"INFO","msg":"handler: started","stream_id":"hv7oz6fo"}
+{"time":"2025-05-07T18:47:18.562213+01:00","level":"INFO","msg":"writer: Do: started","stream_id":"hv7oz6fo"}
+{"time":"2025-05-07T18:47:18.562391+01:00","level":"INFO","msg":"sender: started","stream_id":"hv7oz6fo"}
+{"time":"2025-05-07T18:47:18.870142+01:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-05-07T18:48:32.285073+01:00","level":"INFO","msg":"stream: closing","id":"hv7oz6fo"}
+{"time":"2025-05-07T18:48:32.285996+01:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-05-07T18:48:32.286422+01:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-05-07T18:48:32.986763+01:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-05-07T18:48:33.276997+01:00","level":"INFO","msg":"handler: closed","stream_id":"hv7oz6fo"}
+{"time":"2025-05-07T18:48:33.277071+01:00","level":"INFO","msg":"sender: closed","stream_id":"hv7oz6fo"}
+{"time":"2025-05-07T18:48:33.277286+01:00","level":"INFO","msg":"writer: Close: closed","stream_id":"hv7oz6fo"}
+{"time":"2025-05-07T18:48:33.277563+01:00","level":"INFO","msg":"stream: closed","id":"hv7oz6fo"}

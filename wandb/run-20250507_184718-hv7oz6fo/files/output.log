@@ -1,0 +1,13 @@
+0008.parquet: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 289M/289M [00:02<00:00, 21.1MB/s]
+Generating test split: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 31014/31014 [00:10<00:00, 2969.28 examples/s]
+Filter: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 31014/31014 [00:57<00:00, 542.00 examples/s]
+Traceback (most recent call last):
+  File "/Users/korirogers/multi-modal-transfer-learning/train_decoder.py", line 137, in <module>
+    main()
+    ~~~~^^
+  File "/Users/korirogers/multi-modal-transfer-learning/train_decoder.py", line 45, in main
+    ds_train = Flickr30kDataset(split="train", root=args.root)
+  File "/Users/korirogers/multi-modal-transfer-learning/dataset.py", line 33, in __init__
+    for cap_id in range(n_caps) #n_caps is always 5
+                  ~~~~~^^^^^^^^
+TypeError: 'list' object cannot be interpreted as an integer

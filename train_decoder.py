@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from dotenv import load_dotenv 
 import wandb 
-from huggingface_hub import HfApi, hf_hub_upload 
+from huggingface_hub import HfApi
 from dataset import Flickr30kDataset
 from model import MultiModalCaptioner 
 
@@ -124,9 +124,14 @@ def main():
         hf_api.create_repo(args.repo, exist_ok=True)
         final_path = args.save_dir / f"model_final_epoch{args.epoch}.pt"
         shutil.copy(ckpt_path, final_path)
-        hf_hub_upload(repo_id=args.repo, path_or_fileobj=str(final_path), path_in_repo=final_path.name, commit_message=f"Upload model trained for {args.epoch} epochs (run {run_id})")
+        hf_api.upload_file(
+            repo_id=args.repo,
+            path_or_fileobj=str(final_path),
+            path_in_repo=final_path.name,
+            commit_message=f"Upload model trained for {args.epoch} epochs (run {run_id})"
+        )
         print(f"Model pushed to https://huggingface.co/{args.repo} - file {final_path.name}")
     wandb.finish()
             
-    if __name__ == "__main__": 
-        main()
+if __name__ == "__main__": 
+    main()

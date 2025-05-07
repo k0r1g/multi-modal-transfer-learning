@@ -1,0 +1,62 @@
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Filter:  19%|██████████████████████████▉                                                                                                                | 6000/31014 [00:11<00:47, 531.67 examples/s]
+Traceback (most recent call last):
+  File "/Users/korirogers/multi-modal-transfer-learning/train_decoder.py", line 137, in <module>
+    main()
+    ~~~~^^
+  File "/Users/korirogers/multi-modal-transfer-learning/train_decoder.py", line 49, in main
+    ds_val= Flickr30kDataset(split="val", root=args.root)
+  File "/Users/korirogers/multi-modal-transfer-learning/dataset.py", line 27, in __init__
+    self.data = raw.filter(lambda x: x["split"] == split)
+                ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/arrow_dataset.py", line 557, in wrapper
+    out: Union["Dataset", "DatasetDict"] = func(self, *args, **kwargs)
+                                           ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/fingerprint.py", line 442, in wrapper
+    out = func(dataset, *args, **kwargs)
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/arrow_dataset.py", line 3746, in filter
+    indices = self.map(
+        function=partial(
+    ...<25 lines>...
+        desc=desc or "Filter",
+    )
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/arrow_dataset.py", line 557, in wrapper
+    out: Union["Dataset", "DatasetDict"] = func(self, *args, **kwargs)
+                                           ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/arrow_dataset.py", line 3079, in map
+    for rank, done, content in Dataset._map_single(**dataset_kwargs):
+                               ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/arrow_dataset.py", line 3525, in _map_single
+    for i, batch in iter_outputs(shard_iterable):
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/arrow_dataset.py", line 3475, in iter_outputs
+    yield i, apply_function(example, i, offset=offset)
+             ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/arrow_dataset.py", line 3398, in apply_function
+    processed_inputs = function(*fn_args, *additional_args, **fn_kwargs)
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/arrow_dataset.py", line 6420, in get_indices_from_mask_function
+    num_examples = len(batch[next(iter(batch.keys()))])
+                       ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/formatting/formatting.py", line 280, in __getitem__
+    value = self.format(key)
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/formatting/formatting.py", line 380, in format
+    return self.formatter.format_column(self.pa_table.select([key]))
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/formatting/formatting.py", line 460, in format_column
+    column = self.python_features_decoder.decode_column(column, pa_table.column_names[0])
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/formatting/formatting.py", line 226, in decode_column
+    return self.features.decode_column(column, column_name) if self.features else column
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/features/features.py", line 2122, in decode_column
+    [decode_nested_example(self[column_name], value) if value is not None else None for value in column]
+     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/features/features.py", line 1414, in decode_nested_example
+    return schema.decode_example(obj, token_per_repo_id=token_per_repo_id) if obj is not None else None
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/datasets/features/image.py", line 187, in decode_example
+    image.load()  # to avoid "Too many open files" errors
+    ~~~~~~~~~~^^
+  File "/Users/korirogers/miniconda3/envs/mlx-week4/lib/python3.13/site-packages/PIL/ImageFile.py", line 389, in load
+    n, err_code = decoder.decode(b)
+                  ~~~~~~~~~~~~~~^^^
+KeyboardInterrupt
