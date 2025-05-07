@@ -13,8 +13,13 @@ from dataset import Flickr30kDataset
 from model import MultiModalCaptioner 
 
 
+import os 
+import uuid 
+import shutil
+
+
 def parse_args(): 
-    p = argsparse.ArgumentParser()
+    p = argparse.ArgumentParser()
     p.add_argument("--root", type=str, default=None, help="datasets cache dir")
     p.add_argument("--batch_size", type=int, default=16)
     p.add_argument("--epochs", type=int, default=5)

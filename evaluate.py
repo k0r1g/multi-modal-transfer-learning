@@ -7,7 +7,6 @@ from tqdm import tqdm
 from dataset import Flickr30kDataset
 from model import MultiModalCaptioner
 
-
 #greedy decoding 
 def generate(model, pixel, tokenizer, max_len=50, device="cuda"): 
     model.eval()
@@ -43,7 +42,7 @@ def main():
         pixel = batch["pixel_values"].to(device)
         captions = generate(model, pixel, ds.tokenizer, device=device)
         hyps.extend([[c.split()] for c in captions])
-        refs.extend([[ds.tokenizer.decode(batch["labels"][i], skip_special_tokens=True).split()wha] for i in range(len(captions))])
+        refs.extend([[ds.tokenizer.decode(batch["labels"][i], skip_special_tokens=True).split()] for i in range(len(captions))])
         
     bleu4 = corpus_bleu(refs, hyps)
     print(f"BLEU score: {bleu4:.3f}")
