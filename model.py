@@ -59,9 +59,9 @@ class CLIPBackbone(nn.Module):
 
 class CausalSelfAttnBlock(nn.Module): 
     """A single transformer block with no cross attention"""
-    def __init__(self, d_model: int, n_heads: int, dropout: float)
+    def __init__(self, d_model: int, n_heads: int, dropout: float):
         super().__init__()
-        assert d_model % n_heads == 0, 
+        assert d_model % n_heads == 0, "d_model must be divisible by n_heads"
         self.d_model = d_model 
         self.n_heads = n_heads 
         self.head_dim = d_model // n_heads 
