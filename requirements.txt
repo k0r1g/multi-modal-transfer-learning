@@ -3,4 +3,9 @@ datasets
 transformers
 Pillow
 mlx
+wandb
+python-dotenv
+huggingface_hub
+nltk
+tqdm
 einops
