@@ -52,6 +52,14 @@ def main():
     #model and optimiser
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = MultiModalCaptioner(vocab_size=len(ds_train.tokenizer)).to(device)
+    
+    # Print model architecture and parameter count
+    print(model)
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Total parameters: {total_params:,}")
+    print(f"Trainable parameters: {trainable_params:,}")
+    
     optim = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr) # freeze CLIP 
     
     if args.dry_run: 
