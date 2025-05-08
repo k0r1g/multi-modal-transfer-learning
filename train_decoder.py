@@ -106,7 +106,7 @@ def main():
             
         #validation loop 
         model.eval()
-        val_loss_sum, n_val_tokens = 0.0, 0 
+        val_loss_sum, n_batches = 0.0, 0 
         with torch.no_grad():
             for batch in dl_val:
                 pixel, inp, lbl = (t.to(device) for t in (batch["pixel_values"], batch["input_ids"], batch["labels"]))
@@ -117,8 +117,8 @@ def main():
                     ignore_index = ds_val.tokenizer.pad_token_id, 
                 )
                 val_loss_sum += loss.item()
-                n_val_tokens += (lbl != ds_val.tokenizer.pad_token_id).sum().item()
-        val_loss = val_loss_sum / n_val_tokens 
+                n_batches += 1
+        val_loss = val_loss_sum / n_batches 
         wandb.log({"val/loss": val_loss, "epoch": epoch})
         print(f"Epoch {epoch} val loss: {val_loss:.3f}")
         

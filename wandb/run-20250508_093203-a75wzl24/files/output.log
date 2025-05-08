@@ -1,0 +1,151 @@
+README.md: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 641/641 [00:00<00:00, 2.23MB/s]
+flickr30k.py: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 2.51k/2.51k [00:00<00:00, 7.58MB/s]
+0000.parquet: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 506M/506M [00:05<00:00, 100MB/s]
+0001.parquet: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 502M/502M [00:04<00:00, 103MB/s]
+0002.parquet: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 506M/506M [00:04<00:00, 108MB/s]
+0003.parquet: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 512M/512M [00:04<00:00, 104MB/s]
+0004.parquet:  81%|████████████████████████████████████████████████████████████████████████████████████████▌                    | 409M/504M [00:03<00:00, 108MB/s]
+Traceback (most recent call last):
+  File "/root/multi-modal-transfer-learning/train_decoder.py", line 145, in <module>
+    main()
+  File "/root/multi-modal-transfer-learning/train_decoder.py", line 45, in main
+    ds_train = Flickr30kDataset(split="train", root=args.root)
+  File "/root/multi-modal-transfer-learning/dataset.py", line 26, in __init__
+    raw = load_dataset("nlphuji/flickr30k", cache_dir=root, split = "test")
+  File "/usr/local/lib/python3.10/dist-packages/datasets/load.py", line 2084, in load_dataset
+    builder_instance.download_and_prepare(
+  File "/usr/local/lib/python3.10/dist-packages/datasets/builder.py", line 925, in download_and_prepare
+    self._download_and_prepare(
+  File "/usr/local/lib/python3.10/dist-packages/datasets/builder.py", line 979, in _download_and_prepare
+    split_generators = self._split_generators(dl_manager, **split_generators_kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/datasets/packaged_modules/parquet/parquet.py", line 49, in _split_generators
+    data_files = dl_manager.download_and_extract(self.config.data_files)
+  File "/usr/local/lib/python3.10/dist-packages/datasets/download/download_manager.py", line 326, in download_and_extract
+    return self.extract(self.download(url_or_urls))
+  File "/usr/local/lib/python3.10/dist-packages/datasets/download/download_manager.py", line 159, in download
+    downloaded_path_or_paths = map_nested(
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/py_utils.py", line 504, in map_nested
+    mapped = [
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/py_utils.py", line 505, in <listcomp>
+    map_nested(
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/py_utils.py", line 521, in map_nested
+    mapped = [
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/py_utils.py", line 522, in <listcomp>
+    _single_map_nested((function, obj, batched, batch_size, types, None, True, None))
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/py_utils.py", line 390, in _single_map_nested
+    return [mapped_item for batch in iter_batched(data_struct, batch_size) for mapped_item in function(batch)]
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/py_utils.py", line 390, in <listcomp>
+    return [mapped_item for batch in iter_batched(data_struct, batch_size) for mapped_item in function(batch)]
+  File "/usr/local/lib/python3.10/dist-packages/datasets/download/download_manager.py", line 219, in _download_batched
+    return [
+  File "/usr/local/lib/python3.10/dist-packages/datasets/download/download_manager.py", line 220, in <listcomp>
+    self._download_single(url_or_filename, download_config=download_config)
+  File "/usr/local/lib/python3.10/dist-packages/datasets/download/download_manager.py", line 229, in _download_single
+    out = cached_path(url_or_filename, download_config=download_config)
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/file_utils.py", line 191, in cached_path
+    output_path = huggingface_hub.HfApi(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/hf_api.py", line 5483, in hf_hub_download
+    return hf_hub_download(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1008, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1159, in _hf_hub_download_to_cache_dir
+    _download_to_tmp_and_move(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1723, in _download_to_tmp_and_move
+    http_get(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 494, in http_get
+    for chunk in r.iter_content(chunk_size=constants.DOWNLOAD_CHUNK_SIZE):
+  File "/usr/local/lib/python3.10/dist-packages/requests/models.py", line 820, in generate
+    yield from self.raw.stream(chunk_size, decode_content=True)
+  File "/usr/local/lib/python3.10/dist-packages/urllib3/response.py", line 1033, in stream
+    data = self.read(amt=amt, decode_content=decode_content)
+  File "/usr/local/lib/python3.10/dist-packages/urllib3/response.py", line 925, in read
+    data = self._raw_read(amt)
+  File "/usr/local/lib/python3.10/dist-packages/urllib3/response.py", line 852, in _raw_read
+    data = self._fp_read(amt, read1=read1) if not fp_closed else b""
+  File "/usr/local/lib/python3.10/dist-packages/urllib3/response.py", line 835, in _fp_read
+    return self._fp.read(amt) if amt is not None else self._fp.read()
+  File "/usr/lib/python3.10/http/client.py", line 466, in read
+    s = self.fp.read(amt)
+  File "/usr/lib/python3.10/socket.py", line 705, in readinto
+    return self._sock.recv_into(b)
+  File "/usr/lib/python3.10/ssl.py", line 1303, in recv_into
+    return self.read(nbytes, buffer)
+  File "/usr/lib/python3.10/ssl.py", line 1159, in read
+    return self._sslobj.read(len, buffer)
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/root/multi-modal-transfer-learning/train_decoder.py", line 145, in <module>
+    main()
+  File "/root/multi-modal-transfer-learning/train_decoder.py", line 45, in main
+    ds_train = Flickr30kDataset(split="train", root=args.root)
+  File "/root/multi-modal-transfer-learning/dataset.py", line 26, in __init__
+    raw = load_dataset("nlphuji/flickr30k", cache_dir=root, split = "test")
+  File "/usr/local/lib/python3.10/dist-packages/datasets/load.py", line 2084, in load_dataset
+    builder_instance.download_and_prepare(
+  File "/usr/local/lib/python3.10/dist-packages/datasets/builder.py", line 925, in download_and_prepare
+    self._download_and_prepare(
+  File "/usr/local/lib/python3.10/dist-packages/datasets/builder.py", line 979, in _download_and_prepare
+    split_generators = self._split_generators(dl_manager, **split_generators_kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/datasets/packaged_modules/parquet/parquet.py", line 49, in _split_generators
+    data_files = dl_manager.download_and_extract(self.config.data_files)
+  File "/usr/local/lib/python3.10/dist-packages/datasets/download/download_manager.py", line 326, in download_and_extract
+    return self.extract(self.download(url_or_urls))
+  File "/usr/local/lib/python3.10/dist-packages/datasets/download/download_manager.py", line 159, in download
+    downloaded_path_or_paths = map_nested(
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/py_utils.py", line 504, in map_nested
+    mapped = [
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/py_utils.py", line 505, in <listcomp>
+    map_nested(
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/py_utils.py", line 521, in map_nested
+    mapped = [
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/py_utils.py", line 522, in <listcomp>
+    _single_map_nested((function, obj, batched, batch_size, types, None, True, None))
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/py_utils.py", line 390, in _single_map_nested
+    return [mapped_item for batch in iter_batched(data_struct, batch_size) for mapped_item in function(batch)]
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/py_utils.py", line 390, in <listcomp>
+    return [mapped_item for batch in iter_batched(data_struct, batch_size) for mapped_item in function(batch)]
+  File "/usr/local/lib/python3.10/dist-packages/datasets/download/download_manager.py", line 219, in _download_batched
+    return [
+  File "/usr/local/lib/python3.10/dist-packages/datasets/download/download_manager.py", line 220, in <listcomp>
+    self._download_single(url_or_filename, download_config=download_config)
+  File "/usr/local/lib/python3.10/dist-packages/datasets/download/download_manager.py", line 229, in _download_single
+    out = cached_path(url_or_filename, download_config=download_config)
+  File "/usr/local/lib/python3.10/dist-packages/datasets/utils/file_utils.py", line 191, in cached_path
+    output_path = huggingface_hub.HfApi(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/hf_api.py", line 5483, in hf_hub_download
+    return hf_hub_download(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1008, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1159, in _hf_hub_download_to_cache_dir
+    _download_to_tmp_and_move(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 1723, in _download_to_tmp_and_move
+    http_get(
+  File "/usr/local/lib/python3.10/dist-packages/huggingface_hub/file_download.py", line 494, in http_get
+    for chunk in r.iter_content(chunk_size=constants.DOWNLOAD_CHUNK_SIZE):
+  File "/usr/local/lib/python3.10/dist-packages/requests/models.py", line 820, in generate
+    yield from self.raw.stream(chunk_size, decode_content=True)
+  File "/usr/local/lib/python3.10/dist-packages/urllib3/response.py", line 1033, in stream
+    data = self.read(amt=amt, decode_content=decode_content)
+  File "/usr/local/lib/python3.10/dist-packages/urllib3/response.py", line 925, in read
+    data = self._raw_read(amt)
+  File "/usr/local/lib/python3.10/dist-packages/urllib3/response.py", line 852, in _raw_read
+    data = self._fp_read(amt, read1=read1) if not fp_closed else b""
+  File "/usr/local/lib/python3.10/dist-packages/urllib3/response.py", line 835, in _fp_read
+    return self._fp.read(amt) if amt is not None else self._fp.read()
+  File "/usr/lib/python3.10/http/client.py", line 466, in read
+    s = self.fp.read(amt)
+  File "/usr/lib/python3.10/socket.py", line 705, in readinto
+    return self._sock.recv_into(b)
+  File "/usr/lib/python3.10/ssl.py", line 1303, in recv_into
+    return self.read(nbytes, buffer)
+  File "/usr/lib/python3.10/ssl.py", line 1159, in read
+    return self._sslobj.read(len, buffer)
+KeyboardInterrupt
