@@ -9,9 +9,12 @@ from tqdm import tqdm
 from dotenv import load_dotenv 
 import wandb 
 from huggingface_hub import HfApi
-from dataset import Flickr30kDataset
+# from dataset import Flickr30kDataset
 from model import MultiModalCaptioner 
+from datasets import load_dataset
+from transformers import CLIPTokenizer
 
+tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
 
 import os 
 import uuid 
@@ -21,7 +24,7 @@ import shutil
 def parse_args(): 
     p = argparse.ArgumentParser()
     p.add_argument("--root", type=str, default=None, help="datasets cache dir")
-    p.add_argument("--batch_size", type=int, default=16)
+    p.add_argument("--batch_size", type=int, default=128) #prev 16
     p.add_argument("--epochs", type=int, default=5)
     p.add_argument("--lr", type=float, default=2e-4)
     p.add_argument("--dry_run", action="store_true")
@@ -41,17 +44,28 @@ def main():
     hf_api = HfApi(token=os.getenv("HF_TOKEN")) if not args.dry_run else None 
     run_id = uuid.uuid4().hex[:8]
     
+    #load data from hf
+    hf_ds = load_dataset("k0r1g/flickr30k-clip-preprocessed")  
+    hf_ds.set_format("torch", columns=["pixel_values", "input_ids", "labels"])
+    
+    
+    
     #training set 
-    ds_train = Flickr30kDataset(split="train", root=args.root)
-    dl_train = DataLoader(ds_train, batch_size = args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    # ds_train = Flickr30kDataset(split="train", root=args.root)
+    # dl_train = DataLoader(ds_train, batch_size = args.batch_size, shuffle=True, num_workers=2, pin_memory=True)
+    ds_train = hf_ds["train"]
+    dl_train = DataLoader(ds_train, batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=True)
     
     #validation set 
-    ds_val= Flickr30kDataset(split="val", root=args.root)
-    dl_val = DataLoader(ds_val, batch_size = args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    # ds_val= Flickr30kDataset(split="val", root=args.root)
+    # dl_val = DataLoader(ds_val, batch_size = args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
+    ds_val = hf_ds["val"]
+    dl_val = DataLoader(ds_val, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
+
     
     #model and optimiser
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = MultiModalCaptioner(vocab_size=len(ds_train.tokenizer)).to(device)
+    model = MultiModalCaptioner(vocab_size=len(tokenizer)).to(device)
     
     # Print model architecture and parameter count
     print(model)
@@ -72,12 +86,12 @@ def main():
         loss = cross_entropy(
             logits.view(-1, logits.size(-1)), # (B,L,V) -> (B*L, V)
             lbl.view(-1), # (B,L) -> (B*L)
-            ignore_index = ds_train.tokenizer.pad_token_id, #note: also ignores eos token and unk token 
+            ignore_index = tokenizer.pad_token_id, #note: also ignores eos token and unk token 
         )
         print("single pass OK- loss:", loss.item())
         return 
     
-    args.save_dir.mkdir(parents=True, exist_ok=True)
+    args.save_ckpt.mkdir(parents=True, exist_ok=True)
     global_step = 0
 
 
@@ -87,12 +101,13 @@ def main():
         model.train()
         pbar = tqdm(dl_train, desc=f"Epoch {epoch}")
         for batch in pbar:
+            start_time = time.time()
             pixel, inp, lbl = (t.to(device) for t in (batch["pixel_values"], batch["input_ids"], batch["labels"]))
             logits, _ = model(pixel, inp)
             loss = cross_entropy(
                 logits.view(-1, logits.size(-1)), 
                 lbl.view(-1), 
-                ignore_index = ds_train.tokenizer.pad_token_id,  #note: also ignores eos token and unk token
+                ignore_index = tokenizer.pad_token_id,  #note: also ignores eos token and unk token
             )
             optim.zero_grad()
             loss.backward()
@@ -102,7 +117,10 @@ def main():
             wandb.log({"train/loss": loss.item(), 
                       "epoch": epoch, 
                       "step": global_step})
-            pbar.set_postfix(loss=f"{loss.item():.3f}")
+            # pbar.set_postfix(loss=f"{loss.item():.3f}")
+            
+            step_time = time.time() - start_time
+            pbar.set_postfix(loss=f"{loss.item():.3f}", step_time=f"{step_time:.2f}s")
             
         #validation loop 
         model.eval()
@@ -114,7 +132,7 @@ def main():
                 loss = cross_entropy(
                     logits.view(-1, logits.size(-1)), 
                     lbl.view(-1), 
-                    ignore_index = ds_val.tokenizer.pad_token_id, 
+                    ignore_index = tokenizer.pad_token_id, 
                 )
                 val_loss_sum += loss.item()
                 n_batches += 1
@@ -123,20 +141,20 @@ def main():
         print(f"Epoch {epoch} val loss: {val_loss:.3f}")
         
         #checkpoint at each epoch, save to wandb a
-        ckpt_path = args.save_dir / f"epoch{epoch}.pt"
+        ckpt_path = args.save_ckpt / f"epoch{epoch}.pt"
         torch.save(model.state_dict(), ckpt_path)
         wandb.save(ckpt_path)
     
     #save to hf 
     if args.repo: 
         hf_api.create_repo(args.repo, exist_ok=True)
-        final_path = args.save_dir / f"model_final_epoch{args.epoch}.pt"
+        final_path = args.save_ckpt / f"model_final_epoch{args.epochs}.pt"
         shutil.copy(ckpt_path, final_path)
         hf_api.upload_file(
             repo_id=args.repo,
             path_or_fileobj=str(final_path),
             path_in_repo=final_path.name,
-            commit_message=f"Upload model trained for {args.epoch} epochs (run {run_id})"
+            commit_message=f"Upload model trained for {args.epochs} epochs (run {run_id})"
         )
         print(f"Model pushed to https://huggingface.co/{args.repo} - file {final_path.name}")
     wandb.finish()

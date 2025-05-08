@@ -4,8 +4,15 @@ from torch.utils.data import DataLoader
 from nltk.translate.bleu_score import corpus_bleu 
 from tqdm import tqdm 
 
-from dataset import Flickr30kDataset
+# from dataset import Flickr30kDataset
 from model import MultiModalCaptioner
+from datasets import load_dataset
+from transformers import CLIPTokenizer
+
+#load dataset
+hf_ds = load_dataset("k0r1g/flickr30k-clip-preprocessed")
+hf_ds.set_format("torch", columns=["pixel_values", "input_ids", "labels"])
+ds = hf_ds["test"]
 
 #greedy decoding 
 def generate(model, pixel, tokenizer, max_len=50, device="cuda"): 
@@ -32,7 +39,9 @@ def main():
     dl = DataLoader(ds, batch_size=8, shuffle=False)
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = MultiModalCaptioner(vocab_size=len(ds.tokenizer)).to(device)
+    # model = MultiModalCaptioner(vocab_size=len(ds.tokenizer)).to(device)
+    tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
+    model = MultiModalCaptioner(vocab_size=tokenizer.vocab_size).to(device)
 
     if args.ckpt: 
         model.load_state_dict(torch.load(args.ckpt, map_location=device))
@@ -40,9 +49,9 @@ def main():
     refs, hyps = [], []
     for batch in tqdm(dl, desc="Evlauating"):
         pixel = batch["pixel_values"].to(device)
-        captions = generate(model, pixel, ds.tokenizer, device=device)
+        captions = generate(model, pixel, tokenizer, device=device)
         hyps.extend([[c.split()] for c in captions])
-        refs.extend([[ds.tokenizer.decode(batch["labels"][i], skip_special_tokens=True).split()] for i in range(len(captions))])
+        refs.extend([[tokenizer.decode(batch["labels"][i], skip_special_tokens=True).split()] for i in range(len(captions))])
         
     bleu4 = corpus_bleu(refs, hyps)
     print(f"BLEU score: {bleu4:.3f}")

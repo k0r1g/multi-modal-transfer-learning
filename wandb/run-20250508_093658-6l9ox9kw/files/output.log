@@ -1,0 +1,118 @@
+0004.parquet:  55%|███████████████████████████████████████████████████████████▌                                                | 504M/913M [00:01<00:05, 73.6MB/s]
+0005.parquet: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 495M/495M [00:06<00:00, 76.5MB/s]
+0006.parquet: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 495M/495M [00:06<00:00, 76.7MB/s]
+0007.parquet: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 497M/497M [00:06<00:00, 75.5MB/s]
+0008.parquet: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████| 289M/289M [00:03<00:00, 72.9MB/s]
+Generating test split: 100%|███████████████████████████████████████████████████████████████████████████████████████| 31014/31014 [00:12<00:00, 2512.39 examples/s]
+Filter: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████| 31014/31014 [02:21<00:00, 219.78 examples/s]
+preprocessor_config.json: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████| 316/316 [00:00<00:00, 933kB/s]
+tokenizer_config.json: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████| 592/592 [00:00<00:00, 1.30MB/s]
+vocab.json: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| 862k/862k [00:00<00:00, 3.69MB/s]
+merges.txt: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| 525k/525k [00:00<00:00, 7.21MB/s]
+tokenizer.json: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████| 2.22M/2.22M [00:00<00:00, 5.96MB/s]
+special_tokens_map.json: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████| 389/389 [00:00<00:00, 1.28MB/s]
+config.json: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████| 4.19k/4.19k [00:00<00:00, 7.44MB/s]
+Filter: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████| 31014/31014 [02:04<00:00, 249.36 examples/s]
+pytorch_model.bin: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████| 605M/605M [00:04<00:00, 134MB/s]
+model.safetensors:  12%|████████████▎                                                                                         | 73.4M/605M [00:01<00:06, 79.3MB/s]
+MultiModalCaptioner(
+  (backbone): CLIPBackbone(
+    (clip): CLIPModel(
+      (text_model): CLIPTextTransformer(
+        (embeddings): CLIPTextEmbeddings(
+          (token_embedding): Embedding(49408, 512)
+          (position_embedding): Embedding(77, 512)
+        )
+        (encoder): CLIPEncoder(
+          (layers): ModuleList(
+            (0-11): 12 x CLIPEncoderLayer(
+              (self_attn): CLIPSdpaAttention(
+                (k_proj): Linear(in_features=512, out_features=512, bias=True)
+                (v_proj): Linear(in_features=512, out_features=512, bias=True)
+                (q_proj): Linear(in_features=512, out_features=512, bias=True)
+                (out_proj): Linear(in_features=512, out_features=512, bias=True)
+              )
+              (layer_norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+              (mlp): CLIPMLP(
+                (activation_fn): QuickGELUActivation()
+                (fc1): Linear(in_features=512, out_features=2048, bias=True)
+                (fc2): Linear(in_features=2048, out_features=512, bias=True)
+              )
+              (layer_norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+        )
+        (final_layer_norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+      )
+      (vision_model): CLIPVisionTransformer(
+        (embeddings): CLIPVisionEmbeddings(
+          (patch_embedding): Conv2d(3, 768, kernel_size=(32, 32), stride=(32, 32), bias=False)
+          (position_embedding): Embedding(50, 768)
+        )
+        (pre_layrnorm): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+        (encoder): CLIPEncoder(
+          (layers): ModuleList(
+            (0-11): 12 x CLIPEncoderLayer(
+              (self_attn): CLIPSdpaAttention(
+                (k_proj): Linear(in_features=768, out_features=768, bias=True)
+                (v_proj): Linear(in_features=768, out_features=768, bias=True)
+                (q_proj): Linear(in_features=768, out_features=768, bias=True)
+                (out_proj): Linear(in_features=768, out_features=768, bias=True)
+              )
+              (layer_norm1): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+              (mlp): CLIPMLP(
+                (activation_fn): QuickGELUActivation()
+                (fc1): Linear(in_features=768, out_features=3072, bias=True)
+                (fc2): Linear(in_features=3072, out_features=768, bias=True)
+              )
+              (layer_norm2): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+        )
+        (post_layernorm): LayerNorm((768,), eps=1e-05, elementwise_affine=True)
+      )
+      (visual_projection): Linear(in_features=768, out_features=512, bias=False)
+      (text_projection): Linear(in_features=512, out_features=512, bias=False)
+    )
+  )
+  (decoder): MMDecoder(
+    (type_emb): Embedding(2, 256)
+    (pos_emb): Embedding(127, 256)
+    (img_proj): Linear(in_features=768, out_features=256, bias=False)
+    (txt_proj): Linear(in_features=512, out_features=256, bias=False)
+    (blocks): ModuleList(
+      (0-2): 3 x CausalSelfAttnBlock(
+        (q_proj): Linear(in_features=256, out_features=256, bias=False)
+        (k_proj): Linear(in_features=256, out_features=256, bias=False)
+        (v_proj): Linear(in_features=256, out_features=256, bias=False)
+        (out_proj): Linear(in_features=256, out_features=256, bias=False)
+        (attn_drop): Dropout(p=0.1, inplace=False)
+        (resid_drop): Dropout(p=0.1, inplace=False)
+        (ln1): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+        (mlp): Sequential(
+          (0): Linear(in_features=256, out_features=512, bias=True)
+          (1): GELU(approximate='none')
+          (2): Linear(in_features=512, out_features=256, bias=True)
+          (3): Dropout(p=0.1, inplace=False)
+        )
+        (ln2): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+      )
+    )
+    (ln_f): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+  )
+  (lm_head): Linear(in_features=256, out_features=49408, bias=True)
+)
+Total parameters: 165,914,625
+Trainable parameters: 14,637,312
+  File "/root/multi-modal-transfer-learning/train_decoder.py", line 145, in <module>
+    main()
+  File "/root/multi-modal-transfer-learning/train_decoder.py", line 80, in main
+    args.save_dir.mkdir(parents=True, exist_ok=True)
+AttributeError: 'Namespace' object has no attribute 'save_dir'
+Traceback (most recent call last):
+  File "/root/multi-modal-transfer-learning/train_decoder.py", line 145, in <module>
+    main()
+  File "/root/multi-modal-transfer-learning/train_decoder.py", line 80, in main
+    args.save_dir.mkdir(parents=True, exist_ok=True)
+AttributeError: 'Namespace' object has no attribute 'save_dir'
+model.safetensors: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████| 605M/605M [00:08<00:00, 73.8MB/s]

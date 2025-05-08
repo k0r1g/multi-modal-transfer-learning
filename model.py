@@ -77,9 +77,9 @@ class CausalSelfAttnBlock(nn.Module):
         self.resid_drop = nn.Dropout(dropout)
         self.ln1 = nn.LayerNorm(d_model)
         self.mlp = nn.Sequential(
-            nn.Linear(d_model, d_model * 2),
+            nn.Linear(d_model, d_model * 4),
             nn.GELU(),
-            nn.Linear(d_model * 2, d_model),
+            nn.Linear(d_model * 4, d_model),
             nn.Dropout(dropout),
         )
         self.ln2 = nn.LayerNorm(d_model)
@@ -135,7 +135,7 @@ class CausalSelfAttnBlock(nn.Module):
 
 class MMDecoder(nn.Module):
     """Stack of causal self-attention blocks""" 
-    def __init__(self, d_model=256, n_layers=3, n_heads=4, dropout=0.1, img_input_dim=768, txt_input_dim=512,  max_len = 77 + 50):
+    def __init__(self, d_model=384, n_layers=4, n_heads=6, dropout=0.1, img_input_dim=768, txt_input_dim=512,  max_len = 77 + 50):
         super().__init__()
          # modality id embedding: 0 = image, 1 = text 
         self.type_emb = nn.Embedding(2, d_model)
@@ -186,7 +186,7 @@ class MultiModalCaptioner(nn.Module):
     """
     Full model = frozen CLIP + decoder + projection head 
     """
-    def __init__(self, vocab_size: int, d_model: int = 256, n_layers: int = 3, n_heads: int = 4, dropout: float = 0.1): 
+    def __init__(self, vocab_size: int, d_model: int = 384, n_layers: int = 4, n_heads: int = 6, dropout: float = 0.1): 
         super().__init__()
         self.backbone = CLIPBackbone()
         self.decoder = MMDecoder(d_model = d_model, n_layers = n_layers, n_heads = n_heads, dropout = dropout)
