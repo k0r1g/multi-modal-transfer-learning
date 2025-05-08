@@ -1,5 +1,6 @@
 import argparse 
 from pathlib import Path 
+import time
 import torch 
 from torch.utils.data import DataLoader 
 from torch.optim import AdamW
@@ -9,17 +10,36 @@ from tqdm import tqdm
 from dotenv import load_dotenv 
 import wandb 
 from huggingface_hub import HfApi
-# from dataset import Flickr30kDataset
+from dataset import Flickr30kDataset          # <-- we'll use our own Dataset class
 from model import MultiModalCaptioner 
-from datasets import load_dataset
 from transformers import CLIPTokenizer
-
-tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
 
 import os 
 import uuid 
 import shutil
 
+tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-base-patch32")
+
+def masked_ce_loss(logits, targets, mask):
+    """
+    logits: (B, L, V)
+    targets: (B, L)
+    mask: (B, L), 1 for real tokens, 0 for padding
+    """
+    loss = torch.nn.functional.cross_entropy(
+        logits.view(-1, logits.size(-1)),      # (B*L, V)
+        targets.view(-1),                      # (B*L)
+        reduction="none"
+    )
+    mask = mask.view(-1).float()              # (B*L)
+    return (loss * mask).sum() / mask.sum()
+
+# ------------------------------------------------------------------
+# Simple collate-fn so DataLoader can stack our dicts -> batch.
+# ------------------------------------------------------------------
+def collate_fn(batch):
+    keys = batch[0].keys()
+    return {k: torch.stack([b[k] for b in batch]) for k in keys}
 
 def parse_args(): 
     p = argparse.ArgumentParser()
@@ -44,24 +64,29 @@ def main():
     hf_api = HfApi(token=os.getenv("HF_TOKEN")) if not args.dry_run else None 
     run_id = uuid.uuid4().hex[:8]
     
-    #load data from hf
-    hf_ds = load_dataset("k0r1g/flickr30k-clip-preprocessed")  
-    hf_ds.set_format("torch", columns=["pixel_values", "input_ids", "labels"])
+    # ------------------------------------------------------------------
+    # Use on-the-fly dataset class (no HF parquet, no streaming)
+    # ------------------------------------------------------------------
+    ds_train = Flickr30kDataset(split="train", root=args.root)
+    ds_val = Flickr30kDataset(split="val", root=args.root)
     
+    dl_train = DataLoader(
+        ds_train, 
+        batch_size=args.batch_size, 
+        shuffle=True, 
+        num_workers=2, 
+        pin_memory=True,
+        collate_fn=collate_fn
+    )
     
-    
-    #training set 
-    # ds_train = Flickr30kDataset(split="train", root=args.root)
-    # dl_train = DataLoader(ds_train, batch_size = args.batch_size, shuffle=True, num_workers=2, pin_memory=True)
-    ds_train = hf_ds["train"]
-    dl_train = DataLoader(ds_train, batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=True)
-    
-    #validation set 
-    # ds_val= Flickr30kDataset(split="val", root=args.root)
-    # dl_val = DataLoader(ds_val, batch_size = args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
-    ds_val = hf_ds["val"]
-    dl_val = DataLoader(ds_val, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=True)
-
+    dl_val = DataLoader(
+        ds_val, 
+        batch_size=args.batch_size, 
+        shuffle=False, 
+        num_workers=2, 
+        pin_memory=True,
+        collate_fn=collate_fn
+    )
     
     #model and optimiser
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -78,16 +103,17 @@ def main():
     
     if args.dry_run: 
         batch = next(iter(dl_train))
-        pixel, inp, lbl = (t.to(device) for t in (batch["pixel_values"], batch["input_ids"], batch["labels"]))
-        logits, _ = model(pixel, inp) #run forward pass 
-        
-             
-        #note: torch.nn.functional.cross_entropy(input, target) input is (N,C) and target is (N)
-        loss = cross_entropy(
-            logits.view(-1, logits.size(-1)), # (B,L,V) -> (B*L, V)
-            lbl.view(-1), # (B,L) -> (B*L)
-            ignore_index = tokenizer.pad_token_id, #note: also ignores eos token and unk token 
+        pixel, inp, lbl, mask = (
+            t.to(device)
+            for t in (
+                batch["pixel_values"],
+                batch["input_ids"],
+                batch["labels"],
+                batch["attention_mask"],
+            )
         )
+        logits, _ = model(pixel, inp) #run forward pass 
+        loss = masked_ce_loss(logits, lbl, mask)
         print("single pass OK- loss:", loss.item())
         return 
     
@@ -102,13 +128,18 @@ def main():
         pbar = tqdm(dl_train, desc=f"Epoch {epoch}")
         for batch in pbar:
             start_time = time.time()
-            pixel, inp, lbl = (t.to(device) for t in (batch["pixel_values"], batch["input_ids"], batch["labels"]))
-            logits, _ = model(pixel, inp)
-            loss = cross_entropy(
-                logits.view(-1, logits.size(-1)), 
-                lbl.view(-1), 
-                ignore_index = tokenizer.pad_token_id,  #note: also ignores eos token and unk token
+            pixel, inp, lbl, mask = (
+                t.to(device)
+                for t in (
+                    batch["pixel_values"],
+                    batch["input_ids"],
+                    batch["labels"],
+                    batch["attention_mask"],
+                )
             )
+            logits, _ = model(pixel, inp)
+            loss = masked_ce_loss(logits, lbl, mask)
+
             optim.zero_grad()
             loss.backward()
             optim.step()
@@ -117,7 +148,6 @@ def main():
             wandb.log({"train/loss": loss.item(), 
                       "epoch": epoch, 
                       "step": global_step})
-            # pbar.set_postfix(loss=f"{loss.item():.3f}")
             
             step_time = time.time() - start_time
             pbar.set_postfix(loss=f"{loss.item():.3f}", step_time=f"{step_time:.2f}s")
@@ -127,13 +157,17 @@ def main():
         val_loss_sum, n_batches = 0.0, 0 
         with torch.no_grad():
             for batch in dl_val:
-                pixel, inp, lbl = (t.to(device) for t in (batch["pixel_values"], batch["input_ids"], batch["labels"]))
-                logits, _ = model(pixel, inp)
-                loss = cross_entropy(
-                    logits.view(-1, logits.size(-1)), 
-                    lbl.view(-1), 
-                    ignore_index = tokenizer.pad_token_id, 
+                pixel, inp, lbl, mask = (
+                    t.to(device)
+                    for t in (
+                        batch["pixel_values"],
+                        batch["input_ids"],
+                        batch["labels"],
+                        batch["attention_mask"],
+                    )
                 )
+                logits, _ = model(pixel, inp)
+                loss = masked_ce_loss(logits, lbl, mask)
                 val_loss_sum += loss.item()
                 n_batches += 1
         val_loss = val_loss_sum / n_batches 

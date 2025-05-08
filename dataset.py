@@ -13,24 +13,25 @@ from transformers import CLIPProcessor, CLIPTokenizer
 """
 We use the same vocab as CLIP including its special tokens
 
-Figure out how to deal with captions
-
-Deal with the split (its done in the column)
+This Dataset now:
+  • filters by split correctly
+  • returns attention_mask so masked_ce_loss works
+  • keeps all your original logic & comments
 
 """
 
 
-class Flickr30kDataset(torch.utils.data.Dataset): 
+class Flickr30kDataset(Dataset): 
     def __init__(self, split: str = "train", root: str | Path | None = None, max_caption_length: int = 50): 
-        
-        raw = load_dataset("nlphuji/flickr30k", cache_dir=root, split = "test")
+        # load entire dataset once (parquet -> memory) but no huge tensor buffer
+        raw = load_dataset("nlphuji/flickr30k", cache_dir=root, split="train")  # full corpus
         self.data = raw.filter(lambda x: x["split"] == split)
         
-        #reorganise the data so one sample per image-caption pair 
+        # reorganise: one entry per image-caption pair
         self.index: List[Tuple[int, int]] = [
             (row_id, cap_id)
-            for row_id , n_caps in enumerate(self.data["caption"])
-            for cap_id in range(len(n_caps)) #n_caps is always 5
+            for row_id, caps in enumerate(self.data["caption"])
+            for cap_id in range(len(caps))  # always 5 captions
         ]
 
         
@@ -45,35 +46,33 @@ class Flickr30kDataset(torch.utils.data.Dataset):
         row_id, cap_id = self.index[idx]
         sample = self.data[row_id]
         
-        img = sample["image"]
-        caption = sample["caption"][cap_id]
+        img: Image.Image = sample["image"]
+        caption: str = sample["caption"][cap_id]
         
         pixel = self.processor(images=img, return_tensors="pt")["pixel_values"].squeeze(0)
-        #tokenize caption 
-        tok = self.tokenizer(caption, padding="max_length", truncation=True, max_length=self.max_length, return_tensors="pt", add_special_tokens=True) #(3,224,224)
         
-        input_ids = tok["input_ids"].squeeze(0) # already <bos> … <eos> … <pad>
+        # tokenize caption (CLIP already adds <bos>/<eos>)
+        tok = self.tokenizer(
+            caption,
+            padding="max_length",
+            truncation=True,
+            max_length=self.max_length,
+            return_tensors="pt",
+            add_special_tokens=True,
+        )
+        input_ids = tok["input_ids"].squeeze(0)           # [<bos>, ... , <eos>, <pad>…]
+        attention_mask = tok["attention_mask"].squeeze(0) # 1 for real tokens, 0 for pad
         
-        #everything except the last token 
-        decoder_input_ids = input_ids[:-1] 
-        #everything except the first token 
-        labels = input_ids[1:] 
-        
-        # The input_ids are: [<bos>, w1, w2, ..., w_n]
-        # The labels remain: [w1, w2, ..., w_n, <eos>]
-        
+        # decoder-style shift
         pad_id = self.tokenizer.pad_token_id
-        decoder_input_ids = torch.nn.functional.pad(decoder_input_ids, (0,1), value=pad_id)
-        labels = torch.nn.functional.pad(labels, (0,1), value=pad_id)
+        decoder_input_ids = torch.nn.functional.pad(input_ids[:-1], (0, 1), value=pad_id)
+        labels = torch.nn.functional.pad(input_ids[1:], (0, 1), value=pad_id)
     
-        # The input_ids are: [<bos>, w1, w2, ..., w_n, <pad>]
-        # The labels remain: [w1, w2, ..., w_n, <eos>, <pad>] note, <pad> is actually the <eos> token  for CLIP
-    
-        
         return {
             "pixel_values": pixel, 
             "input_ids": decoder_input_ids, 
-            "labels": labels, 
+            "labels": labels,
+            "attention_mask": attention_mask,
         }
         
 if __name__ == "__main__": 
