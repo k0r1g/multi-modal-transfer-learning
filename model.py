@@ -204,7 +204,7 @@ class MultiModalCaptioner(nn.Module):
         
         self.tok_emb = nn.Embedding.from_pretrained(
             self.backbone.clip.text_model.embeddings.token_embedding.weight.clone(), 
-            freeze=False  # or freeze for 1-2 epochs, then unfreeze
+            freeze=True  # or freeze for 1-2 epochs, then unfreeze
         )
         self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
         self.lm_head.weight = self.tok_emb.weight  # tie weights
