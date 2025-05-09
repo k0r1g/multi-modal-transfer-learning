@@ -141,7 +141,7 @@ class MMDecoder(nn.Module):
         self.type_emb = nn.Embedding(2, d_model)
         self.pos_emb = nn.Embedding(max_len, d_model)
         self.img_proj = nn.Linear(img_input_dim, d_model, bias=False)
-        # self.txt_proj = nn.Linear(txt_input_dim, d_model, bias=False)
+        self.txt_proj = nn.Linear(txt_input_dim, d_model, bias=False)
         self.blocks = nn.ModuleList([CausalSelfAttnBlock(d_model, n_heads, dropout) for _ in range(n_layers)])
         self.ln_f = nn.LayerNorm(d_model)
     
@@ -157,7 +157,7 @@ class MMDecoder(nn.Module):
         
         # project to decoder dimension 
         h_img = self.img_proj(h_img)
-        # h_txt = self.txt_proj(h_txt)
+        h_txt = self.txt_proj(h_txt)
         
         # add position embeddings and type embeddings 
         img_pos_ids = torch.arange(L_v, device=h_img.device)
@@ -204,10 +204,9 @@ class MultiModalCaptioner(nn.Module):
         
         self.tok_emb = nn.Embedding.from_pretrained(
             self.backbone.clip.text_model.embeddings.token_embedding.weight.clone(), 
-            freeze=True  # or freeze for 1-2 epochs, then unfreeze
+            freeze=False  # or freeze for 1-2 epochs, then unfreeze
         )
-        self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
-        self.lm_head.weight = self.tok_emb.weight  # tie weights
+        self.lm_head = nn.Linear(d_model, vocab_size, bias=True)
 
     def forward(self, pixel_values: torch.Tensor, caption_input_ids: torch.Tensor, text_mask) -> Tuple[torch.Tensor, torch.Tensor]:
         """

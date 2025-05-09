@@ -51,6 +51,10 @@ def parse_args():
     p.add_argument("--project", type=str, default="clip-mm-decoder") #wandb project
     p.add_argument("--repo", type=str, default="clip-mm-decoder") #hf repo 
     p.add_argument("--save_ckpt", type=str, default=Path("checkpoints"))
+    p.add_argument("--train_frac", type=float, default=1.0,
+                   help="Fraction of the training split to use. Set to 0.2 to use one-fifth of the data.")
+    p.add_argument("--val_frac", type=float, default=1.0,
+                   help="Fraction of the validation split to use.")
     return p.parse_args()
 
 
@@ -67,8 +71,27 @@ def main():
     # ------------------------------------------------------------------
     # Use on-the-fly dataset class (no HF parquet, no streaming)
     # ------------------------------------------------------------------
-    ds_train = Flickr30kDataset(split="train", root=args.root)
-    ds_val = Flickr30kDataset(split="val", root=args.root)
+    ds_train_full = Flickr30kDataset(split="train", root=args.root)
+    ds_val_full = Flickr30kDataset(split="val", root=args.root)
+    
+    # ------------------------------------------------------------------
+    # Optionally take a random subset of the dataset for faster iteration
+    # ------------------------------------------------------------------
+    from torch.utils.data import Subset
+    import random
+    if args.train_frac < 1.0:
+        subset_size = int(len(ds_train_full) * args.train_frac)
+        indices = random.sample(range(len(ds_train_full)), subset_size)
+        ds_train = Subset(ds_train_full, indices)
+    else:
+        ds_train = ds_train_full
+
+    if args.val_frac < 1.0:
+        subset_size = int(len(ds_val_full) * args.val_frac)
+        indices = random.sample(range(len(ds_val_full)), subset_size)
+        ds_val = Subset(ds_val_full, indices)
+    else:
+        ds_val = ds_val_full
     
     dl_train = DataLoader(
         ds_train, 
@@ -122,12 +145,6 @@ def main():
 
 
     for epoch in range(1, args.epochs + 1): 
-        
-        # unfreeze tok_emb after 2 epochs
-        if epoch == 3:
-            model.tok_emb.weight.requires_grad_(True)
-            optim = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr)
-            print("tok_emb unfrozen and optimizer reset")
             
         #training loop 
         model.train()

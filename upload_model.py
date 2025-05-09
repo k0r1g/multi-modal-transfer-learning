@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 
 # Load Hugging Face token from .env or set directly here
-HF_TOKEN =""  # replace if not using dotenv
+HF_TOKEN ="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"  # replace if not using dotenv
 REPO_ID = "Kogero/clip-mm-decoder"  
 
 CHECKPOINT_PATH = Path("checkpoints/model_final_epoch10.pt")

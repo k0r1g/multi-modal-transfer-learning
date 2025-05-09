@@ -35,6 +35,10 @@ def generate(model, pixel, tokenizer, max_len=50, device="cuda",
             logits, _ = model(pixel, input_ids, text_mask)
             next_token_logits = logits[:, -1, :] / temperature  # Apply temperature
             
+            # MODIFICATION: Prevent EOS from being generated in the first few tokens
+            if i < 3:  # Force model to generate at least 3 tokens before EOS
+                next_token_logits[:, tokenizer.eos_token_id] = -float('inf')
+            
             # Apply repetition penalty
             for batch_idx in range(B):
                 for prev_token in prev_tokens[batch_idx]:
@@ -99,6 +103,7 @@ def main():
     parser.add_argument("--top_p", type=float, default=0.9, help="Top-p filtering parameter")
     parser.add_argument("--repetition_penalty", type=float, default=1.5, help="Penalty for repeating tokens")
     parser.add_argument("--use_sampling", action="store_true", help="Use sampling instead of greedy decoding")
+    parser.add_argument("--min_length", type=int, default=5, help="Minimum length of generated captions")
     args = parser.parse_args()
     
     ds = Flickr30kDataset(split="test")
@@ -166,7 +171,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-
-
-#python evaluate.py --ckpt checkpoints/epoch10.pt --samples 50 --display_frequency 5 --temperature 0.7 --top_k 50 --top_p 0.9 --repetition_penalty 1.5 --use_sampling
+    main() 
