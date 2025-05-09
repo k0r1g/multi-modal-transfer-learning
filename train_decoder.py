@@ -112,7 +112,7 @@ def main():
                 batch["attention_mask"],
             )
         )
-        logits, _ = model(pixel, inp) #run forward pass 
+        logits, _ = model(pixel, inp, mask) #run forward pass 
         loss = masked_ce_loss(logits, lbl, mask)
         print("single pass OK- loss:", loss.item())
         return 
@@ -123,6 +123,12 @@ def main():
 
     for epoch in range(1, args.epochs + 1): 
         
+        # unfreeze tok_emb after 2 epochs
+        if epoch == 3:
+            model.tok_emb.weight.requires_grad_(True)
+            optim = AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr)
+            print("tok_emb unfrozen and optimizer reset")
+            
         #training loop 
         model.train()
         pbar = tqdm(dl_train, desc=f"Epoch {epoch}")
@@ -137,7 +143,7 @@ def main():
                     batch["attention_mask"],
                 )
             )
-            logits, _ = model(pixel, inp)
+            logits, _ = model(pixel, inp, mask)
             loss = masked_ce_loss(logits, lbl, mask)
 
             optim.zero_grad()
@@ -166,7 +172,7 @@ def main():
                         batch["attention_mask"],
                     )
                 )
-                logits, _ = model(pixel, inp)
+                logits, _ = model(pixel, inp, mask)
                 loss = masked_ce_loss(logits, lbl, mask)
                 val_loss_sum += loss.item()
                 n_batches += 1

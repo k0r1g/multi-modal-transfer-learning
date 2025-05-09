@@ -25,11 +25,14 @@ def generate(model, pixel, tokenizer, max_len=50, device="cuda",
         B = pixel.size(0)
         input_ids = torch.full((B, 1), tokenizer.bos_token_id, device=device, dtype=torch.long)
         
+        # Create text mask for the input (all 1s since there's no padding yet)
+        text_mask = torch.ones((B, 1), device=device)
+        
         # Track generated tokens to apply repetition penalty
         prev_tokens = [[] for _ in range(B)]
         
         for i in range(max_len):
-            logits, _ = model(pixel, input_ids)
+            logits, _ = model(pixel, input_ids, text_mask)
             next_token_logits = logits[:, -1, :] / temperature  # Apply temperature
             
             # Apply repetition penalty
@@ -71,6 +74,8 @@ def generate(model, pixel, tokenizer, max_len=50, device="cuda",
                 
             # Add the predicted token to the sequence
             input_ids = torch.cat([input_ids, next_id], dim=1)
+            # Update mask
+            text_mask = torch.cat([text_mask, torch.ones((B, 1), device=device)], dim=1)
             
             # Early stopping if all sequences have EOS
             if (next_id == tokenizer.eos_token_id).all():
@@ -127,7 +132,10 @@ def main():
         
         #process each sample in batch 
         for i in range(len(captions)):
-            gt = tokenizer.decode(batch["labels"][i], skip_special_tokens=True).strip()
+            # Safer: apply label mask from attention_mask
+            ids = batch["labels"][i]
+            mask = batch["attention_mask"][i]
+            gt = tokenizer.decode(ids[mask.bool()], skip_special_tokens=True).strip()
             pred = captions[i]
             
             #add to overall metrics 

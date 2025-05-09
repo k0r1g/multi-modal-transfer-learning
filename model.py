@@ -145,7 +145,7 @@ class MMDecoder(nn.Module):
         self.blocks = nn.ModuleList([CausalSelfAttnBlock(d_model, n_heads, dropout) for _ in range(n_layers)])
         self.ln_f = nn.LayerNorm(d_model)
     
-    def forward(self, h_img: torch.Tensor, h_txt: torch.Tensor, txt_input_ids: torch.Tensor, text_mask):  
+    def forward(self, h_img: torch.Tensor, h_txt: torch.Tensor, txt_input_ids: torch.Tensor, text_mask):
         """
         h_img : (B, L_v, D_v)  – visiion token embeddings 
         h_txt : (B, L_t, D_v)  – token embeddings  (shifted‑right captions)
@@ -173,14 +173,18 @@ class MMDecoder(nn.Module):
         causal_mask[:, :L_v] = 0 
         causal_mask[L_v:, L_v:] = torch.tril(torch.zeros(L_t, L_t))
         
-        #pad mask 
-        pad_mask = (1.0 - text_mask.float()) * -1e4  # (B, L_t)
-        pad_mask = torch.cat([torch.zeros(B, L_v), pad_mask], dim=1).to(x.device)
-        pad_mask = pad_mask.unsqueeze(1)  # (B, 1, L_total)
-        causal_mask = causal_mask.unsqueeze(0).unsqueeze(0)
-        
-        for blk in self.blocks: 
-            x = blk(x, causal_mask + pad_mask)
+        # pad mask
+        pad_mask = (1.0 - text_mask.float()) * -1e4               # (B, L_t)
+        pad_mask = torch.cat(
+            [torch.zeros(B, L_v, device=x.device), pad_mask], dim=1
+        )                                                          # (B, L_total)
+        pad_mask = pad_mask.unsqueeze(1)                           # (B, 1, L_total)
+
+        # causal mask
+        causal_mask = causal_mask.unsqueeze(0).unsqueeze(0)        # (1, 1, L, L)
+
+        for blk in self.blocks:
+            x = blk(x, causal_mask + pad_mask)                     # broadcasts → (B,1,L,L)
         
         return self.ln_f(x) # (B, L_total, D)
 
@@ -196,7 +200,13 @@ class MultiModalCaptioner(nn.Module):
         super().__init__()
         self.backbone = CLIPBackbone()
         self.decoder = MMDecoder(d_model = d_model, n_layers = n_layers, n_heads = n_heads, dropout = dropout)
-        self.lm_head = nn.Linear(d_model, vocab_size)
+        
+        self.tok_emb = nn.Embedding.from_pretrained(
+            self.backbone.clip.text_model.embeddings.token_embedding.weight.clone(), 
+            freeze=False  # or freeze for 1-2 epochs, then unfreeze
+        )
+        self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
+        self.lm_head.weight = self.tok_emb.weight  # tie weights
 
     def forward(self, pixel_values: torch.Tensor, caption_input_ids: torch.Tensor, text_mask) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -206,7 +216,8 @@ class MultiModalCaptioner(nn.Module):
         
         h_img = self.backbone.encode_image(pixel_values) #(B, L_v, 768)
         #must give it tokenised captions 
-        h_txt = self.backbone.embed_text(caption_input_ids) #(B, L_t, 768)
+        # h_txt = self.backbone.embed_text(caption_input_ids) #(B, L_t, 768)
+        h_txt = self.tok_emb(caption_input_ids)
 
         # pass through decoder 
         h_dec = self.decoder(h_img, h_txt, caption_input_ids, text_mask) #(B, L_total, d_model)
