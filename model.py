@@ -181,7 +181,7 @@ class MMDecoder(nn.Module):
         pad_mask = pad_mask.unsqueeze(1)                           # (B, 1, L_total)
 
         # causal mask
-        causal_mask = causal_mask.unsqueeze(0).unsqueeze(0)        # (1, 1, L, L)
+        causal_mask = causal_mask.unsqueeze(0).unsqueeze(0).expand(B, 1, L_total, L_total)
 
         for blk in self.blocks:
             x = blk(x, causal_mask + pad_mask)                     # broadcasts → (B,1,L,L)
