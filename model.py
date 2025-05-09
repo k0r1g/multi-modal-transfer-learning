@@ -113,7 +113,7 @@ class CausalSelfAttnBlock(nn.Module):
         scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.head_dim) #(B, n_heads, L, L)
         
         if attn_mask is not None: 
-            scores = scores + attn_mask.unsqueeze(0).unsqueeze(0)
+            scores = scores + attn_mask
         
         attn = torch.softmax(scores, dim=-1) #softmax over last dimension so that we apply softmax over the keys 
         attn = self.attn_drop(attn)
