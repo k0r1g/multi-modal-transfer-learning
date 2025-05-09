@@ -4,7 +4,7 @@ from pathlib import Path
 import os
 
 # ---- CONFIG ----
-HF_TOKEN = "test"  # replace this if needed
+HF_TOKEN = ""  # replace this if needed
 REPO_ID = "Kogero/clip-mm-decoder"
 BEST_EPOCH = 11
 CKPT_DIR = Path("checkpoints")  # or wherever your ckpts are saved

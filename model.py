@@ -144,8 +144,8 @@ class MMDecoder(nn.Module):
         # self.txt_proj = nn.Linear(txt_input_dim, d_model, bias=False)
         self.blocks = nn.ModuleList([CausalSelfAttnBlock(d_model, n_heads, dropout) for _ in range(n_layers)])
         self.ln_f = nn.LayerNorm(d_model)
-        
-    def forward(self, h_img: torch.Tensor, h_txt: torch.Tensor, txt_input_ids: torch.Tensor):
+    
+    def forward(self, h_img: torch.Tensor, h_txt: torch.Tensor, txt_input_ids: torch.Tensor, text_mask):  
         """
         h_img : (B, L_v, D_v)  – visiion token embeddings 
         h_txt : (B, L_t, D_v)  – token embeddings  (shifted‑right captions)
@@ -161,7 +161,7 @@ class MMDecoder(nn.Module):
         
         # add position embeddings and type embeddings 
         img_pos_ids = torch.arange(L_v, device=h_img.device)
-        txt_pos_ids = torch.arange(L_t, device=h_txt.device)
+        txt_pos_ids = torch.arange(L_t, device=h_txt.device) + L_v
         h_img = h_img + self.type_emb.weight[0] + self.pos_emb(img_pos_ids) # h_img: shape (B, L_v, d_model) — e.g. (B, 77, 512)
         h_txt = h_txt + self.type_emb.weight[1] + self.pos_emb(txt_pos_ids) # h_txt: shape (B, L_t, d_model) — e.g. (B, 50, 512)
         
@@ -173,8 +173,14 @@ class MMDecoder(nn.Module):
         causal_mask[:, :L_v] = 0 
         causal_mask[L_v:, L_v:] = torch.tril(torch.zeros(L_t, L_t))
         
+        #pad mask 
+        pad_mask = (1.0 - text_mask.float()) * -1e4  # (B, L_t)
+        pad_mask = torch.cat([torch.zeros(B, L_v), pad_mask], dim=1).to(x.device)
+        pad_mask = pad_mask.unsqueeze(1)  # (B, 1, L_total)
+        causal_mask = causal_mask.unsqueeze(0).unsqueeze(0)
+        
         for blk in self.blocks: 
-            x = blk(x, causal_mask)
+            x = blk(x, causal_mask + pad_mask)
         
         return self.ln_f(x) # (B, L_total, D)
 
@@ -192,7 +198,7 @@ class MultiModalCaptioner(nn.Module):
         self.decoder = MMDecoder(d_model = d_model, n_layers = n_layers, n_heads = n_heads, dropout = dropout)
         self.lm_head = nn.Linear(d_model, vocab_size)
 
-    def forward(self, pixel_values: torch.Tensor, caption_input_ids: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, pixel_values: torch.Tensor, caption_input_ids: torch.Tensor, text_mask) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         caption_input_ids – already shifted‑right (<BOS> w_t-1 ...)
         returns logits over vocab & concat hidden states (for optional use).
@@ -203,7 +209,7 @@ class MultiModalCaptioner(nn.Module):
         h_txt = self.backbone.embed_text(caption_input_ids) #(B, L_t, 768)
 
         # pass through decoder 
-        h_dec = self.decoder(h_img, h_txt, caption_input_ids) #(B, L_total, d_model)
+        h_dec = self.decoder(h_img, h_txt, caption_input_ids, text_mask) #(B, L_total, d_model)
 
         # project to vocab size 
         _ , L_v, _ = h_img.shape
@@ -248,7 +254,7 @@ if __name__ == "__main__":
     
     #---test MultiModalCaptioner-----
     captioner = MultiModalCaptioner(vocab_size=backbone.tokenizer.vocab_size)
-    logits, hs = captioner(dummy_img, txt_ids)
+    logits, hs = captioner(dummy_img, txt_ids, text_mask)
     assert logits.shape == torch.Size([B, L_txt, backbone.tokenizer.vocab_size])
     assert hs.shape == torch.Size([B, L_img + L_txt, D_dec])
 
