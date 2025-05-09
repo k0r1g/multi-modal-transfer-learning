@@ -177,14 +177,15 @@ class MMDecoder(nn.Module):
         pad_mask = (1.0 - text_mask.float()) * -1e4               # (B, L_t)
         pad_mask = torch.cat(
             [torch.zeros(B, L_v, device=x.device), pad_mask], dim=1
-        )                                                          # (B, L_total)
-        pad_mask = pad_mask.unsqueeze(1)                           # (B, 1, L_total)
+        )                                                          # (B, L_total)                     # (B, 1, L_total)
 
         # causal mask
-        causal_mask = causal_mask.unsqueeze(0).unsqueeze(0).expand(B, 1, L_total, L_total)
-
+        pad_mask = pad_mask.unsqueeze(1).unsqueeze(2)              # (B, 1, 1, L_total)
+        causal_mask = causal_mask.unsqueeze(0).unsqueeze(0).expand(B, -1, -1, -1)  # (B, 1, L_total, L_total)
+        full_mask = causal_mask + pad_mask  
+                               # (B, 1, L_total, L_total)
         for blk in self.blocks:
-            x = blk(x, causal_mask + pad_mask)                     # broadcasts → (B,1,L,L)
+            x = blk(x, full_mask)                     # broadcasts → (B,1,L,L)
         
         return self.ln_f(x) # (B, L_total, D)
 
