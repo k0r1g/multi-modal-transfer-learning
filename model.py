@@ -135,13 +135,13 @@ class CausalSelfAttnBlock(nn.Module):
 
 class MMDecoder(nn.Module):
     """Stack of causal self-attention blocks""" 
-    def __init__(self, d_model=384, n_layers=4, n_heads=6, dropout=0.1, img_input_dim=768, txt_input_dim=512,  max_len = 77 + 50):
+    def __init__(self, d_model=512, n_layers=6, n_heads=8, dropout=0.1, img_input_dim=768, txt_input_dim=512,  max_len = 77 + 50):
         super().__init__()
          # modality id embedding: 0 = image, 1 = text 
         self.type_emb = nn.Embedding(2, d_model)
         self.pos_emb = nn.Embedding(max_len, d_model)
         self.img_proj = nn.Linear(img_input_dim, d_model, bias=False)
-        self.txt_proj = nn.Linear(txt_input_dim, d_model, bias=False)
+        # self.txt_proj = nn.Linear(txt_input_dim, d_model, bias=False)
         self.blocks = nn.ModuleList([CausalSelfAttnBlock(d_model, n_heads, dropout) for _ in range(n_layers)])
         self.ln_f = nn.LayerNorm(d_model)
         
@@ -157,7 +157,7 @@ class MMDecoder(nn.Module):
         
         # project to decoder dimension 
         h_img = self.img_proj(h_img)
-        h_txt = self.txt_proj(h_txt)
+        # h_txt = self.txt_proj(h_txt)
         
         # add position embeddings and type embeddings 
         img_pos_ids = torch.arange(L_v, device=h_img.device)
@@ -186,7 +186,7 @@ class MultiModalCaptioner(nn.Module):
     """
     Full model = frozen CLIP + decoder + projection head 
     """
-    def __init__(self, vocab_size: int, d_model: int = 384, n_layers: int = 4, n_heads: int = 6, dropout: float = 0.1): 
+    def __init__(self, vocab_size: int, d_model: int = 512, n_layers: int = 6, n_heads: int = 8, dropout: float = 0.1): 
         super().__init__()
         self.backbone = CLIPBackbone()
         self.decoder = MMDecoder(d_model = d_model, n_layers = n_layers, n_heads = n_heads, dropout = dropout)

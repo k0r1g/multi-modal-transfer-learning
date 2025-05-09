@@ -72,6 +72,10 @@ class Flickr30kDataset(Dataset):
         pad_id = self.tokenizer.pad_token_id
         decoder_input_ids = torch.nn.functional.pad(input_ids[:-1], (0, 1), value=pad_id)
         labels = torch.nn.functional.pad(input_ids[1:], (0, 1), value=pad_id)
+        
+        # Shift the attention mask accordingly: mask for decoder_input_ids (not labels)
+        attention_mask = attention_mask[:-1]       
+        attention_mask = torch.nn.functional.pad(attention_mask, (0, 1), value=0)
 
         return {
             "pixel_values": pixel,
